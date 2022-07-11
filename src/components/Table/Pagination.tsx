@@ -4,25 +4,20 @@ import { MenuItem, Select } from '@material-ui/core'
 import { IconButton } from '@material-ui/core'
 
 const Pagination = ({
-    // previousPage,
-    // canPreviousPage,
-    // pageIndex,
-    // pageOptions,
-    // canNextPage,
-    // nextPage,
-    // pageSize,
-    // setPageSize,
-    pageParam,
-    setPageParam,
-    perPageParam,
-    setPerPageParam,
-    countPage,
+    previousPage,
+    canPreviousPage,
+    pageIndex,
+    pageOptions,
+    canNextPage,
+    nextPage,
+    pageSize,
+    setPageSize,
 }) => {
     return (
         <div className="h-20 flex justify-end items-center mx-10">
             <button
-                onClick={() => setPageParam(pageParam - 1)}
-                disabled={pageParam == 1}
+                onClick={() => previousPage()}
+                disabled={!canPreviousPage}
                 className="mx-3"
             >
                 {
@@ -34,12 +29,12 @@ const Pagination = ({
             <span>
                 Página{' '}
                 <strong>
-                    {pageParam} de {countPage}
+                    {pageIndex + 1} de {pageOptions.length}
                 </strong>{' '}
             </span>
             <button
-                onClick={() => setPageParam(pageParam + 1)}
-                disabled={pageParam >= countPage}
+                onClick={() => nextPage()}
+                disabled={!canNextPage}
                 className="mx-3"
             >
                 {
@@ -49,16 +44,15 @@ const Pagination = ({
                 }
             </button>{' '}
             <Select
-                className="rounded-xl bg-transparent"
-                value={perPageParam}
+                className="rounded-xl bg-transparent hidden"
+                value={pageSize}
                 onChange={(e) => {
-                    // setPageSize(Number(e.target.value))
-                    setPerPageParam(Number(e.target.value))
+                    setPageSize(Number(e.target.value))
                 }}
             >
-                {[10, 20, 30, 40, 50].map((perPageParam) => (
-                    <MenuItem key={perPageParam} value={perPageParam}>
-                        Mostrar {perPageParam}
+                {[10, 20, 30, 40, 50].map((pageSize) => (
+                    <MenuItem key={pageSize} value={pageSize}>
+                        Mostrar {pageSize}
                     </MenuItem>
                 ))}
             </Select>

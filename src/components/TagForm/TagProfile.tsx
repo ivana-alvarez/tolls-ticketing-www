@@ -21,7 +21,7 @@ import {
 } from '@material-ui/core'
 import { makeStyles } from '@material-ui/styles'
 import {
-    createTagRequest,
+    getAllTagRequest,
     updateTagRequest,
 } from 'store/saleTag/saleTagActions'
 import { useDispatch, useSelector } from 'react-redux'
@@ -33,6 +33,8 @@ import { Media } from 'store/constant'
 import AcceptButton from 'components/buttons/AcceptButton'
 import EditButton from 'components/buttons/EditButton'
 import CancelEditButton from 'components/buttons/CancelEditButton'
+import DownloadButton from 'components/buttons/DownloadButton'
+// import axios from 'axios'
 
 const useStyles = makeStyles((theme: Theme) => ({
     alertIcon: {
@@ -82,24 +84,55 @@ interface Inputs {
     tag_number: string
     tag_serial: string
     media: string
+    proofOfPaymentType: string
+    uploadFile: any
 }
 
 const Schema = yup.object().shape({
-    tag_number: yup
-        .string()
-        .required('Este campo es requerido')
-        .max(12, 'Debe tener máximo 12 carácteres'),
-    tag_serial: yup.string().required('Este campo es requerido'),
-    media: yup.string().required('Este campo es requerido'),
+    // tag_number: yup
+    //     .string()
+    //     .required('Este campo es requerido')
+    //     .max(12, 'Debe tener máximo 12 carácteres'),
+    // tag_serial: yup.string().required('Este campo es requerido'),
+    // media: yup.string().required('Este campo es requerido'),
+    proofOfPaymentType: yup.string(),
+    uploadFile: yup.mixed().when('proofOfPaymentType', {
+        is: (val) => val !== 'sin comprobante',
+        then: yup
+            .mixed()
+            .test('name', 'Debes subir un comprobante', (value) => {
+                return value[0] && value[0].name !== ''
+            })
+            .test('fileSize', 'Supera el tamaño máximo', (value) => {
+                return value[0] && value[0].size <= 1000000
+            })
+            .test('type', 'Solo soporta .xlsx (excel)', (value) => {
+                if (
+                    value[0]?.type.includes(
+                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    )
+                ) {
+                    return true
+                }
+
+                return false
+            }),
+    }),
 })
 
 interface FleetProfileProps {
     fleetId?: string
     readOnly?: boolean
     onlyView?: boolean
+    createMode?: boolean
 }
 
-const TagProfile = ({ fleetId, onlyView, readOnly }: FleetProfileProps) => {
+const TagProfile = ({
+    fleetId,
+    onlyView,
+    readOnly,
+    createMode,
+}: FleetProfileProps) => {
     const classes = useStyles()
     const dispatch = useDispatch()
     const navigate = useNavigate()
@@ -110,6 +143,8 @@ const TagProfile = ({ fleetId, onlyView, readOnly }: FleetProfileProps) => {
         control,
         formState: { errors },
         setValue,
+        register,
+        getValues,
     } = useForm<Inputs>({
         resolver: yupResolver(Schema),
     })
@@ -123,6 +158,8 @@ const TagProfile = ({ fleetId, onlyView, readOnly }: FleetProfileProps) => {
     const [TagData] = React.useState<SaleTag | undefined>(
         tag?.find((tag) => tag.id === fleetId)
     )
+    const [selectedFile, setSelectedFile] = React.useState(null)
+    const [showButton, setShowButton] = React.useState(false)
 
     // const [usedTitle, setUsedTitle] = React.useState<boolean>(true)
 
@@ -136,6 +173,11 @@ const TagProfile = ({ fleetId, onlyView, readOnly }: FleetProfileProps) => {
     //         setValue(name, !usedTitle)
     //     }
     // }
+    const uploadPhoto = async (e) => {
+        const file = e.target?.files[0]
+        setSelectedFile(file)
+        setValue('uploadFile', e.target.files, { shouldValidate: true })
+    }
 
     const handleAbleToEdit = () => {
         setReadOnlyState(!readOnlyState)
@@ -160,21 +202,42 @@ const TagProfile = ({ fleetId, onlyView, readOnly }: FleetProfileProps) => {
         setValue('tag_serial', TagData?.tag_serial)
         setValue('media', TagData?.media)
     }, [TagData, setValue])
+    const onInvalid = (data) => {
+        console.log(data)
+    }
     const onSubmit: SubmitHandler<Inputs> = async (data) => {
         const { tag_number, tag_serial, media } = data
-        const fetchData1 = async () => {
-            setLoading(true)
-            const responseData1 = await dispatch(
-                createTagRequest({
-                    tag_number,
-                    tag_serial,
-                    media: media.toUpperCase(),
-                    is_deleted: false,
-                })
-            )
-            setLoading(false)
-            return responseData1
-        }
+
+        const file = getValues('uploadFile')[0]
+
+        const formData = new FormData()
+
+        Object.entries({ file }).forEach(([key, value]) => {
+            //@ts-ignore
+            formData.append(key, value)
+        })
+        const url =
+            'http://api.regional-toll-qa.local:11089/api/registered-tag/upload/?file'
+        const upload = await fetch(url, {
+            method: 'POST',
+            body: formData,
+            credentials: 'include',
+        })
+        console.log(upload)
+
+        // const fetchData1 = async () => {
+        //     setLoading(true)
+        //     const responseData1 = await dispatch(
+        //         createTagRequest({
+        //             tag_number,
+        //             tag_serial,
+        //             media: media.toUpperCase(),
+        //             is_deleted: false,
+        //         })
+        //     )
+        //     setLoading(false)
+        //     return responseData1
+        // }
         const fetchData2 = async () => {
             setLoading(true)
             const responseData2 = await dispatch(
@@ -190,7 +253,7 @@ const TagProfile = ({ fleetId, onlyView, readOnly }: FleetProfileProps) => {
             return responseData2
         }
         if (!editable) {
-            fetchData1()
+            // upload()
         }
 
         if (editable) {
@@ -201,13 +264,22 @@ const TagProfile = ({ fleetId, onlyView, readOnly }: FleetProfileProps) => {
     // const handleTable = () => {
     //     navigate(`/ventaTag`)
     // }
+    const handleDownload = () => {
+        const fetchData1 = async () => {
+            setLoading(true)
+            const responseData1 = await dispatch(getAllTagRequest())
+            setLoading(false)
+            setShowButton(true)
+            return responseData1
+        }
+
+        fetchData1()
+    }
 
     return (
         <>
             <Grid item xs={12}>
-                <Typography variant="h4">
-                    Asociación de tag con categoría
-                </Typography>
+                <Typography variant="h4">Carga de soportes</Typography>
             </Grid>
             <Grid item xs={12}>
                 <Grid container spacing={2} alignItems="center">
@@ -228,93 +300,146 @@ const TagProfile = ({ fleetId, onlyView, readOnly }: FleetProfileProps) => {
                     ) : null}
                 </Grid>
             </Grid>
-            <form onSubmit={handleSubmit(onSubmit)}>
-                <Grid container spacing={2} sx={{ marginTop: '5px' }}>
-                    <Controller
-                        name="tag_number"
-                        control={control}
-                        // defaultValue={fleetData?.unit_id}
-                        render={({ field }) => (
-                            <Grid
-                                item
-                                xs={12}
-                                md={6}
-                                className={classes.searchControl}
-                            >
-                                <TextField
-                                    label="Número de tag"
-                                    fullWidth
-                                    size="small"
-                                    autoComplete="off"
-                                    {...field}
-                                    error={!!errors.tag_number}
-                                    helperText={errors.tag_number?.message}
-                                    disabled={readOnlyState}
-                                />
-                            </Grid>
-                        )}
-                    />
-
-                    <Controller
-                        name="tag_serial"
-                        control={control}
-                        // defaultValue={fleetData?.unit_id}
-                        render={({ field }) => (
-                            <Grid
-                                item
-                                xs={12}
-                                md={6}
-                                className={classes.searchControl}
-                            >
-                                <TextField
-                                    label="Serial del tag"
-                                    fullWidth
-                                    size="small"
-                                    autoComplete="off"
-                                    {...field}
-                                    error={!!errors.tag_serial}
-                                    helperText={errors.tag_serial?.message}
-                                    disabled={readOnlyState}
-                                />
-                            </Grid>
-                        )}
-                    />
-
-                    <Controller
-                        name="media"
-                        control={control}
-                        defaultValue={TagData?.media}
-                        render={({ field }) => (
-                            <Grid
-                                item
-                                xs={12}
-                                md={6}
-                                className={classes.searchControl}
-                            >
-                                <TextField
-                                    label="Media"
-                                    fullWidth
-                                    select
-                                    size="small"
-                                    autoComplete="off"
-                                    {...field}
-                                    error={!!errors.media}
-                                    helperText={errors.media?.message}
-                                    disabled={readOnlyState}
+            <form onSubmit={handleSubmit(onSubmit, onInvalid)}>
+                {!onlyView && readOnly ? (
+                    <Grid container spacing={2} sx={{ marginTop: '5px' }}>
+                        <Controller
+                            name="tag_number"
+                            control={control}
+                            // defaultValue={fleetData?.unit_id}
+                            render={({ field }) => (
+                                <Grid
+                                    item
+                                    xs={12}
+                                    md={6}
+                                    className={classes.searchControl}
                                 >
-                                    {Media.map((option) => (
-                                        <MenuItem
-                                            key={option.value}
-                                            value={option.value}
-                                        >
-                                            {option.label}
-                                        </MenuItem>
-                                    ))}
-                                </TextField>
-                            </Grid>
-                        )}
-                    />
-                </Grid>
+                                    <TextField
+                                        label="Número de tag"
+                                        fullWidth
+                                        size="small"
+                                        autoComplete="off"
+                                        {...field}
+                                        error={!!errors.tag_number}
+                                        helperText={errors.tag_number?.message}
+                                        disabled={readOnlyState}
+                                    />
+                                </Grid>
+                            )}
+                        />
+
+                        <Controller
+                            name="tag_serial"
+                            control={control}
+                            // defaultValue={fleetData?.unit_id}
+                            render={({ field }) => (
+                                <Grid
+                                    item
+                                    xs={12}
+                                    md={6}
+                                    className={classes.searchControl}
+                                >
+                                    <TextField
+                                        label="Serial del tag"
+                                        fullWidth
+                                        size="small"
+                                        autoComplete="off"
+                                        {...field}
+                                        error={!!errors.tag_serial}
+                                        helperText={errors.tag_serial?.message}
+                                        disabled={readOnlyState}
+                                    />
+                                </Grid>
+                            )}
+                        />
+
+                        <Controller
+                            name="media"
+                            control={control}
+                            defaultValue={TagData?.media}
+                            render={({ field }) => (
+                                <Grid
+                                    item
+                                    xs={12}
+                                    md={6}
+                                    className={classes.searchControl}
+                                >
+                                    <TextField
+                                        label="Media"
+                                        fullWidth
+                                        select
+                                        size="small"
+                                        autoComplete="off"
+                                        {...field}
+                                        error={!!errors.media}
+                                        helperText={errors.media?.message}
+                                        disabled={readOnlyState}
+                                    >
+                                        {Media.map((option) => (
+                                            <MenuItem
+                                                key={option.value}
+                                                value={option.value}
+                                            >
+                                                {option.label}
+                                            </MenuItem>
+                                        ))}
+                                    </TextField>
+                                </Grid>
+                            )}
+                        />
+                    </Grid>
+                ) : null}
+
+                {createMode ? (
+                    <>
+                        <div className="w-full md:w-1/2 px-4 my-4">
+                            <DownloadButton
+                                loading={loading}
+                                handleDownload={handleDownload}
+                            />
+                        </div>
+
+                        {showButton ? (
+                            <div className="w-full md:w-1/2 px-4 my-4">
+                                <label className="font-bold">
+                                    Archivo{' '}
+                                    {errors.uploadFile?.message ? (
+                                        <span className="text-red-600">
+                                            ({errors.uploadFile?.message})
+                                        </span>
+                                    ) : null}
+                                </label>
+                                <label
+                                    className={`flex mt-1 justify-center h-10 items-center text-white hover:text-black rounded-lg hover:border-logo border-2 cursor-pointer ${
+                                        selectedFile && !errors.uploadFile
+                                            ? 'bg-greenO'
+                                            : 'bg-green'
+                                    }`}
+                                >
+                                    <svg
+                                        className="w-8 h-8 mx-2 "
+                                        fill="currentColor"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 20 20"
+                                    >
+                                        <path d="M16.88 9.1A4 4 0 0 1 16 17H5a5 5 0 0 1-1-9.9V7a3 3 0 0 1 4.52-2.59A4.98 4.98 0 0 1 17 8c0 .38-.04.74-.12 1.1zM11 11h3l-4-4-4 4h3v3h2v-3z" />
+                                    </svg>
+                                    <span className=" text-base leading-normal mx-2 font-bold">
+                                        Subir Archivo
+                                    </span>
+
+                                    <input
+                                        type="file"
+                                        className="hidden"
+                                        {...register('uploadFile')}
+                                        name="uploadFile"
+                                        onChange={uploadPhoto}
+                                    />
+                                </label>
+                            </div>
+                        ) : null}
+                    </>
+                ) : null}
 
                 <CardActions>
                     <Grid container justifyContent="flex-end" spacing={0}>

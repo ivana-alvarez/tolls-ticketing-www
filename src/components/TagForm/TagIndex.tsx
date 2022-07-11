@@ -90,8 +90,14 @@ interface CompanyProfileProps {
     fleetId?: string
     readOnly?: boolean
     onlyView?: boolean
+    createMode?: boolean
 }
-const TagIndex = ({ fleetId, onlyView, readOnly }: CompanyProfileProps) => {
+const TagIndex = ({
+    fleetId,
+    onlyView,
+    readOnly,
+    createMode,
+}: CompanyProfileProps) => {
     // tabs
     function TabPanel(props: {
         children: React.ReactElement
@@ -201,6 +207,7 @@ const TagIndex = ({ fleetId, onlyView, readOnly }: CompanyProfileProps) => {
                                     <TagProfile
                                         fleetId={fleetId}
                                         readOnly={readOnly}
+                                        createMode={createMode}
                                     />
                                 </TabPanel>
                                 {/* <TabPanel value={value} index={1}>

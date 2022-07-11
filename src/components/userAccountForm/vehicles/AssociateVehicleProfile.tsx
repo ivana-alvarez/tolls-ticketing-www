@@ -125,6 +125,7 @@ interface FleetProfileProps {
     userId?: string
     setEditVehicle?: any
     setNeww?: any
+    isCompany?: boolean
 }
 
 const AssociateVehicleProfile = ({
@@ -139,6 +140,7 @@ const AssociateVehicleProfile = ({
     userId,
     setEditVehicle,
     setNeww,
+    isCompany,
 }: FleetProfileProps) => {
     const classes = useStyles()
     const dispatch = useDispatch()
@@ -204,6 +206,8 @@ const AssociateVehicleProfile = ({
     const onInvalid = (data) => {
         console.log(data)
     }
+
+    console.log(isCompany)
 
     const onSubmit: SubmitHandler<Inputs> = (data) => {
         const {

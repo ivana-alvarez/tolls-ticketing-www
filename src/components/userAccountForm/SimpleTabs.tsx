@@ -168,6 +168,7 @@ export default function SimpleTabs({
                         readOnly={readOnly}
                         vehiclesData={userData.vehicles}
                         userId={userData.id}
+                        isCompany={userData.is_company}
                     />
                 </TabPanel>
                 <TabPanel value={value} index={3}>

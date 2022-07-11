@@ -38,6 +38,7 @@ import { DefaultRootStateProps, TLanes } from 'types'
 import { getEquipRequest } from 'store/equip/EquipActions'
 import { direction } from '_mockApis/toll/mockToll'
 import { onKeyDown } from 'components/utils'
+import SelectChip from './SelectChip'
 
 // style constant
 const useStyles = makeStyles((theme: Theme) => ({
@@ -110,7 +111,7 @@ interface Inputs {
     height_m: number
     direction: string
     is_active: boolean
-    parent_node: string
+    parent_nodes: string
 }
 //schema validation
 const Schema = yup.object().shape({
@@ -132,7 +133,6 @@ const Schema = yup.object().shape({
         .required('Este campo es requerido'),
     direction: yup.string().required('Este campo es requerido'),
     is_active: yup.boolean(),
-    parent_node: yup.string().required('Este campo es requerido'),
 })
 // ==============================|| COMPANY PROFILE FORM ||============================== //
 interface CompanyProfileFormProps {
@@ -196,18 +196,36 @@ const LineForm = ({
         readOnly ? !!LaneData?.is_active : true
     )
 
+    const [loading, setLoading] = React.useState(true)
+
+    const [optionSelected, setOptionSelected] = React.useState<any>(
+        readOnlyState
+            ? tollData?.lanes?.find((lane) => lane.id === selectedLaneId)
+                  ?.parent_nodes
+            : []
+    )
+
     React.useEffect(() => {
-        dispatch(
-            getEquipRequest({ parent_site: tollData.id, is_deleted: false })
-        )
+        const fetchData = async () => {
+            setLoading(true)
+            const responseData = await dispatch(
+                getEquipRequest({ parent_site: tollData.id, is_deleted: false })
+            )
+
+            setLoading(false)
+            return responseData
+        }
+
+        fetchData()
     }, [dispatch, tollData])
 
     const equips = useSelector((state: DefaultRootStateProps) => state.equips)
 
-    const onInvalid: SubmitErrorHandler<Inputs> = (data, e) => {}
+    const onInvalid: SubmitErrorHandler<Inputs> = (data, e) => {
+        console.log(data)
+    }
     const onSubmit: SubmitHandler<Inputs> = (data: Inputs) => {
-        const { lane_code, name, direction, height_m, width_m, parent_node } =
-            data
+        const { lane_code, name, direction, height_m, width_m } = data
 
         if (!editable) {
             dispatch(
@@ -218,7 +236,7 @@ const LineForm = ({
                     height_m,
                     width_m,
                     is_active: active,
-                    parent_node,
+                    parent_nodes: optionSelected,
                 })
             )
 
@@ -238,7 +256,7 @@ const LineForm = ({
                     height_m,
                     width_m,
                     is_active: active,
-                    parent_node,
+                    parent_nodes: optionSelected,
                 })
             )
             // dispatch(getTollsALLRequest(id))
@@ -268,7 +286,7 @@ const LineForm = ({
         setValue('is_active', LaneData?.is_active)
         setValue('width_m', LaneData?.width_m)
         setValue('height_m', LaneData?.height_m)
-        setValue('parent_node', LaneData?.parent_node)
+        setValue('parent_nodes', LaneData?.parent_nodes)
     }
     React.useEffect(() => {
         if (readOnlyState) {
@@ -278,7 +296,7 @@ const LineForm = ({
             setValue('is_active', LaneData?.is_active)
             setValue('width_m', LaneData?.width_m)
             setValue('height_m', LaneData?.height_m)
-            setValue('parent_node', LaneData?.parent_node)
+            setValue('parent_nodes', LaneData?.parent_nodes)
             // dispatch(getEquipRequest({ _all_: true }))
         }
     }, [tollData, dispatch, setValue])
@@ -460,42 +478,40 @@ const LineForm = ({
                             )}
                         />
                     </Grid>
-                    <Grid
-                        item
-                        xs={12}
-                        sm={12}
-                        md={6}
-                        className={classes.searchControl}
-                    >
-                        <Controller
-                            name="parent_node"
-                            control={control}
-                            defaultValue={LaneData?.parent_node}
-                            render={({ field }) => (
-                                <TextField
-                                    {...field}
-                                    fullWidth
-                                    select
-                                    label="Nodo asociado"
-                                    size="small"
-                                    autoComplete="off"
-                                    error={!!errors.parent_node}
-                                    helperText={errors.parent_node?.message}
-                                    disabled={readOnlyState}
-                                    // onChange={(event) => handleState(event)}
-                                >
-                                    {equips.map((option) => (
-                                        <MenuItem
-                                            key={option.id}
-                                            value={option.id}
-                                        >
-                                            {option.name}
-                                        </MenuItem>
-                                    ))}
-                                </TextField>
-                            )}
-                        />
-                    </Grid>
+
+                    {!loading ? (
+                        <Grid
+                            item
+                            xs={12}
+                            sm={12}
+                            md={6}
+                            className={classes.searchControl}
+                        >
+                            <SelectChip
+                                options={equips}
+                                optionSelected={optionSelected}
+                                setOptionSelected={setOptionSelected}
+                                readOnlyState={readOnlyState}
+                                employeeData={dataLane}
+                            />
+                        </Grid>
+                    ) : (
+                        <Grid
+                            item
+                            xs={12}
+                            sm={12}
+                            md={6}
+                            className={classes.searchControl}
+                        >
+                            <TextField
+                                fullWidth
+                                label="Nodos"
+                                size="small"
+                                autoComplete="off"
+                                disabled={true}
+                            />
+                        </Grid>
+                    )}
 
                     <Grid item xs={6} md={6}>
                         <Controller

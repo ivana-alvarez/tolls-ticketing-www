@@ -134,11 +134,11 @@ export default function StickyHeadTable({ data }: TStickyHeadTableProps) {
                 <>
                     <Grid item sx={{ display: 'flex' }}>
                         <ExcelButton
-                            handleExcel={handleExcel}
+                            handleExcel={handlePdf}
                             loading={loading}
                         />
 
-                        <PdfButton handlePdf={handlePdf} loading={loading} />
+                        <PdfButton handlePdf={handleExcel} loading={loading} />
 
                         <AnimateButton>
                             <Button

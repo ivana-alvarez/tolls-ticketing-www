@@ -34,12 +34,12 @@ import { useDispatch, useSelector } from 'react-redux'
 import { DefaultRootStateProps } from 'types'
 import { useNavigate } from 'react-router'
 import { getTransitReportRequest } from 'store/transitReport/TransitAction'
-import { getStatesRequest } from 'store/states/stateAction'
 import { getTollsRequest } from 'store/tolls/tollsActions'
 import { getLaneStateRequest } from 'store/lane/laneActions'
 import { getFareByTollId } from 'store/fare/FareActions'
 import { getCategoryRequest } from 'store/Category/CategoryActions'
 import CreateReportButton from 'components/buttons/CreateReportButton'
+import { getStatesReportRequest } from 'store/stateReport/stateReportAction'
 
 // import { getCompaniesRequest } from 'store/operatingCompany/operatingCompanyActions'
 // import  { TYPEREPORTS } from '../../../_mockApis/reports/typeReports/TypeReports'
@@ -144,7 +144,9 @@ const ReportTransit = () => {
     const readOnly = true
 
     const tolls = useSelector((state: DefaultRootStateProps) => state.tolls)
-    const states = useSelector((state: DefaultRootStateProps) => state.states)
+    const states = useSelector(
+        (state: DefaultRootStateProps) => state.ReportState
+    )
 
     const lanes = useSelector((state: DefaultRootStateProps) => state.lanes)
     const category = useSelector(
@@ -231,8 +233,8 @@ const ReportTransit = () => {
     }
 
     React.useEffect(() => {
-        dispatch(getStatesRequest())
-        dispatch(getCategoryRequest({ _all_: true }))
+        dispatch(getStatesReportRequest())
+        dispatch(getCategoryRequest())
     }, [dispatch])
     React.useEffect(() => {
         dispatch(getTollsRequest({ state: getValues('state') }))
@@ -480,8 +482,8 @@ const ReportTransit = () => {
                                     </MenuItem>
                                     {lanes.map((option) => (
                                         <MenuItem
-                                            key={option.parent_node}
-                                            value={option.parent_node}
+                                            key={option.parent_nodes}
+                                            value={option.parent_nodes}
                                         >
                                             {option.name}
                                         </MenuItem>

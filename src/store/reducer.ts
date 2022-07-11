@@ -30,6 +30,7 @@ import MonitoringReducer from './monitoring/MonitoringReducer'
 import commonsReducer from './commons/commonsReducer'
 import AnalyticsReducer from './analytics/AnalyticsReducer'
 import ExportPdfReducer from './exportReportPdf/ExportPdfReducer'
+import stateReportReducer from './stateReport/stateReportReducer'
 
 // ==============================|| COMBINE REDUCER ||============================== //
 
@@ -60,6 +61,7 @@ const reducer = combineReducers({
     commons: commonsReducer,
     analytics: AnalyticsReducer,
     pdf: ExportPdfReducer,
+    ReportState: stateReportReducer,
 
     cart: persistReducer(
         {

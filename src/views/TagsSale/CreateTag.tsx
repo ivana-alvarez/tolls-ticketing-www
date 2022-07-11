@@ -3,7 +3,7 @@ import TagIndex from 'components/TagForm/TagIndex'
 const CreateTag = () => {
     return (
         <>
-            <TagIndex />
+            <TagIndex createMode />
         </>
     )
 }
